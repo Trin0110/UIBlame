@@ -11,7 +11,8 @@
     "build": "npm run build -w uiblame && npm run build -w @uiblame/demo",
     "dev": "npm run dev -w @uiblame/demo",
     "test": "npm run test -w uiblame",
-    "check": "npm run build && npm test",
+    "test:production": "node scripts/check-production.mjs",
+    "check": "npm run build && npm test && npm run test:production",
     "pack:check": "npm pack --dry-run -w uiblame"
   },
   "engines": {
