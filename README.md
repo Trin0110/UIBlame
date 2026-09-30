@@ -38,7 +38,7 @@ npm test
 npm run dev
 ```
 
-Open the Vite URL and click **◎ UIBlame** in the bottom-right, then click an instrumented element.
+Open the Vite URL and click **◎ UIBlame** in the bottom-right, then click an instrumented element. You can also toggle inspection with **Alt+Shift+B**; **Escape** cancels inspection or closes the panel.
 
 ## Add it to a Vite project
 
