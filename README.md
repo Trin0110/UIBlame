@@ -29,7 +29,7 @@ The repository dogfoods UIBlame: the demo hero has a real provenance record in `
 
 ## Run the demo
 
-Requirements: Node.js 20+ and Git.
+Requirements: Node.js 20.19+ or 22.12+ and Git (Vite 7 requirements).
 
 ```bash
 npm install
@@ -58,6 +58,8 @@ export default defineConfig({
 ```
 
 The plugin uses `apply: "serve"`; production builds are not instrumented.
+
+For a monorepo with a repository-level `.uiblame` store, set `uiBlame({ root: "../.." })` relative to the Vite root (as in this demo). Markers and CLI `--file` paths are relative to that root; run the CLI there or pass `--root`.
 
 ## Record provenance
 

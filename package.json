@@ -14,9 +14,13 @@
     "test:dogfood": "node scripts/check-dogfood.mjs",
     "test:production": "node scripts/check-production.mjs",
     "check": "npm run build && npm test && npm run test:dogfood && npm run test:production",
-    "pack:check": "npm pack --dry-run -w uiblame"
+    "pack:check": "node scripts/check-package.mjs",
+    "test:browser": "node scripts/check-browser.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
   }
 }

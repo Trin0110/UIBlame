@@ -16,6 +16,9 @@ async function git(root: string, args: string[]) {
 }
 
 export async function resolveSafeFile(root: string, relativeFile: string) {
+  if (!relativeFile || path.isAbsolute(relativeFile) || path.win32.isAbsolute(relativeFile)) {
+    throw new Error("Source path must be project-relative.");
+  }
   const absoluteRoot = path.resolve(root);
   const absoluteFile = path.resolve(absoluteRoot, relativeFile);
   const prefix = absoluteRoot.endsWith(path.sep) ? absoluteRoot : absoluteRoot + path.sep;
@@ -24,11 +27,16 @@ export async function resolveSafeFile(root: string, relativeFile: string) {
     throw new Error("Source path escapes the project root.");
   }
 
-  const stat = await fs.lstat(absoluteFile);
-  if (stat.isSymbolicLink()) {
-    throw new Error("Symbolic source paths are not supported by UIBlame v0.1.");
+  // Check every component: lstat on only the leaf follows symlinked directories.
+  let current = absoluteRoot;
+  for (const component of path.relative(absoluteRoot, absoluteFile).split(path.sep)) {
+    current = path.join(current, component);
+    const stat = await fs.lstat(current);
+    if (stat.isSymbolicLink()) {
+      throw new Error("Symbolic source paths are not supported by UIBlame v0.1.");
+    }
+    if (current === absoluteFile && !stat.isFile()) throw new Error("Source path is not a file.");
   }
-  if (!stat.isFile()) throw new Error("Source path is not a file.");
 
   return absoluteFile;
 }
@@ -54,6 +62,7 @@ function parsePorcelain(output: string) {
 }
 
 export async function inspectGit(root: string, source: SourceLocation): Promise<GitOrigin> {
+  if (!Number.isSafeInteger(source.line) || source.line < 1) throw new Error("Invalid source line.");
   await resolveSafeFile(root, source.file);
   try {
     await git(root, ["rev-parse", "--is-inside-work-tree"]);

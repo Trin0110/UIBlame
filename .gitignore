@@ -4,3 +4,6 @@ dist/
 *.log
 apps/demo/dist/
 .uiblame/private/
+*.tsbuildinfo
+*.tgz
+artifacts/

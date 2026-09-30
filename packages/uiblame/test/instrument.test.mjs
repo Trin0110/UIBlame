@@ -29,3 +29,22 @@ test('plugin is dev-server only', async () => {
   const mod = await import(pathToFileURL(dist));
   assert.equal(mod.uiBlame().apply, 'serve');
 });
+
+test('disabled plugin injects neither markers, runtime nor middleware', async () => {
+  const { uiBlame } = await import(pathToFileURL(dist));
+  const plugin = uiBlame({ enabled: false });
+  plugin.configResolved({ root: process.cwd(), base: '/' });
+  assert.equal(plugin.transform('<div />', path.resolve('App.tsx')), null);
+  assert.deepEqual(plugin.transformIndexHtml(), []);
+  plugin.configureServer({ middlewares: { use() { assert.fail('disabled middleware'); } } });
+});
+
+test('instrumentation preserves custom components and skips files outside the root', async () => {
+  const { uiBlame } = await import(pathToFileURL(dist));
+  const plugin = uiBlame();
+  plugin.configResolved({ root: process.cwd(), base: '/' });
+  const result = plugin.transform('<><Widget /><div data-uiblame-source="existing" /><span /></>', path.resolve('App.tsx'));
+  assert.equal((result.code.match(/data-uiblame-source/g) || []).length, 2);
+  assert.match(result.code, /existing/);
+  assert.equal(plugin.transform('<div />', path.resolve('../outside.tsx')), null);
+});

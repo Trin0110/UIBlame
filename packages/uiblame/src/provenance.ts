@@ -19,14 +19,15 @@ function isProvenanceRecord(value: unknown): value is ProvenanceRecord {
     && typeof record.file === "string"
     && record.file.length > 0
     && typeof record.start === "number"
-    && Number.isInteger(record.start)
+    && Number.isSafeInteger(record.start)
     && record.start >= 1
     && typeof record.end === "number"
-    && Number.isInteger(record.end)
+    && Number.isSafeInteger(record.end)
     && record.end >= record.start
     && typeof record.agent === "string"
     && record.agent.length > 0
     && typeof record.recordedAt === "string"
+    && Number.isFinite(Date.parse(record.recordedAt))
     && isOptionalString(record.session)
     && isOptionalString(record.prompt)
     && isOptionalString(record.promptHash)
@@ -70,7 +71,7 @@ export async function hashSourceRange(root: string, file: string, start: number,
   const raw = await fs.readFile(absoluteFile, "utf8");
   const lines = raw.replaceAll("\r\n", "\n").split("\n");
 
-  if (start < 1 || end < start || end > lines.length) {
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 1 || end < start || end > lines.length) {
     throw new Error(`Source range ${start}:${end} is outside ${file}.`);
   }
 
@@ -137,5 +138,12 @@ export async function appendProvenance(root: string, record: ProvenanceRecord) {
 
   const dir = path.join(root, ".uiblame");
   await fs.mkdir(dir, { recursive: true });
-  await fs.appendFile(path.join(root, PROVENANCE_FILE), `${JSON.stringify(record)}\n`, "utf8");
+  const file = path.join(root, PROVENANCE_FILE);
+  // An edited store may lack its final newline; never merge two JSON records.
+  const existing = await fs.readFile(file, "utf8").catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") return "";
+    throw error;
+  });
+  const separator = existing && !existing.endsWith("\n") ? "\n" : "";
+  await fs.appendFile(file, `${separator}${JSON.stringify(record)}\n`, "utf8");
 }

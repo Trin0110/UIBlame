@@ -14,3 +14,14 @@
 - Keyboard controls: Alt+Shift+B to toggle inspection, Escape to cancel/close.
 - Automated end-to-end provenance tests and production-build leak check.
 - CI coverage on Node 20 and 22 plus npm package dry-run validation.
+
+### Stabilization
+
+- Commit the npm lockfile and use `npm ci` in CI.
+- Align demo browser markers with the repository-level provenance store.
+- Respect Vite base paths for inspector requests.
+- Reject absolute source paths and symlinked parent directories.
+- Normalize CLI source paths, reject malformed ranges, and preserve JSONL record boundaries.
+- Resolve click targets without requiring hover and ignore stale inspection responses.
+- Include the MIT license in the npm package and assert required package contents.
+- Add real Vite endpoint and Chromium browser regression checks.

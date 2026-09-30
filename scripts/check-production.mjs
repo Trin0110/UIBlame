@@ -4,6 +4,7 @@ import path from 'node:path';
 const dist = path.resolve('apps/demo/dist');
 const forbidden = [
   'data-uiblame-source',
+  'data-uiblame-runtime',
   '/__uiblame/api/inspect',
   'uiblame-root',
   '◎ UIBlame'

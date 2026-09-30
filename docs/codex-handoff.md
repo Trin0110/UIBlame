@@ -2,6 +2,12 @@
 
 UIBlame v0.1 is already implemented. The next coding-agent task is **verification and correction**, not feature expansion.
 
+## Stabilization outcome
+
+v0.1 stabilization is complete. See [the verification report](stabilization-report.md)
+and [release checklist](release-checklist.md). The instructions below are retained
+as the acceptance criteria; future work still requires separate scope.
+
 ## Read first
 
 1. `AGENTS.md`
