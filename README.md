@@ -4,34 +4,47 @@
 
 # UIBlame
 
-**Visual provenance for AI-written software.** UIBlame lets you click a rendered UI element and trace it back to its source line, Git history, and recorded AI provenance.
+**Visual provenance for AI-assisted software.** Click a rendered UI element and trace it back to its source line, local Git history, and explicitly recorded AI provenance.
 
 > **Click any pixel. See who—or what—made it.**
 
-UIBlame is intentionally **not an AI-code classifier**. It never claims something was written by AI because it “looks AI-generated.” A `Verified AI` result requires explicit provenance evidence: either the recorded Git commit matches the line currently blamed by Git, or the current source range matches the SHA-256 content hash captured when the provenance record was created. If the evidence is missing, UIBlame says `Unknown`.
+UIBlame is intentionally **not an AI-code classifier**. It never decides that code is AI-generated because it “looks like AI.” A `Verified AI` result requires an explicit provenance record plus matching local evidence. If evidence is missing, the result is `Unknown` — never “human-written.”
 
-## What works in this MVP
+## v0.1 scope
 
-- Vite dev plugin for React/JSX/TSX projects.
+The first version is deliberately narrow and local-first:
+
+- Vite dev plugin for JSX/TSX projects.
 - Automatic source instrumentation during development only.
-- Hover + click inspector rendered in an isolated Shadow DOM.
+- Hover + click inspector in an isolated Shadow DOM.
 - `DOM element → source file + line + column`.
-- Local `git blame`, commit metadata and diff lookup.
-- Provenance statuses: **Verified AI**, **Recorded AI**, and **Unknown**.
-- Local JSONL provenance store with prompt hashing.
-- No account, cloud backend or source upload.
+- Local `git blame`, commit metadata, working-tree state and diff.
+- Evidence states: **Verified AI**, **Recorded AI**, **Unknown**.
+- Local JSONL provenance store.
+- SHA-256 source-range and prompt hashing.
+- CLI for initialization, recording and headless inspection.
+- No account, cloud backend, telemetry or source upload.
 
-## Quick start
+The repository dogfoods UIBlame: the demo hero has a real provenance record in `.uiblame/provenance.jsonl`, so clicking it can exercise the verified path.
+
+## Run the demo
+
+Requirements: Node.js 20+ and Git.
 
 ```bash
 npm install
 npm run build
+npm test
 npm run dev
 ```
 
-Then open the Vite demo URL and click **◎ UIBlame** in the bottom-right corner.
+Open the Vite URL and click **◎ UIBlame** in the bottom-right, then click an instrumented element.
 
-To use the package in another Vite project:
+## Add it to a Vite project
+
+```bash
+npm install -D uiblame
+```
 
 ```ts
 // vite.config.ts
@@ -44,17 +57,17 @@ export default defineConfig({
 });
 ```
 
-UIBlame only runs during `vite serve`; it does not instrument production builds.
+The plugin uses `apply: "serve"`; production builds are not instrumented.
 
-## Recording AI provenance
+## Record provenance
 
-Initialize the store:
+Initialize the local store:
 
 ```bash
 npx uiblame init
 ```
 
-Record a source range after an AI-assisted change:
+Record a source range:
 
 ```bash
 npx uiblame record \
@@ -65,15 +78,34 @@ npx uiblame record \
   --prompt "Make the checkout CTA easier to notice on mobile"
 ```
 
-The CLI captures a SHA-256 hash of the exact source range, records the current Git commit when available, and stores a SHA-256 hash of the prompt alongside the optional prompt text. This lets a pre-commit AI edit still be verified by its unchanged source bytes later.
+By default, `--prompt` is **not stored as raw text**. UIBlame stores its SHA-256 hash. If the exact text is intentionally safe to keep, add `--store-prompt`.
 
-### Status semantics
+A record can be verified later by either:
+
+1. the recorded Git commit matching the commit blamed for the selected line; or
+2. the current source range matching the SHA-256 content hash captured at record time.
+
+The content-hash path is useful for AI-assisted edits recorded before a later Git commit.
+
+## Inspect without the browser
+
+The CLI can exercise the same Git/provenance path headlessly:
+
+```bash
+npx uiblame inspect \
+  --file src/CheckoutButton.tsx \
+  --line 42
+```
+
+It prints JSON containing the source location, Git evidence and provenance result. This is also useful in tests and agent workflows.
+
+## Evidence semantics
 
 | Status | Meaning |
 | --- | --- |
-| **Verified AI** | A provenance record covers the range and either its Git commit matches blame **or** its recorded source-content hash still matches. |
-| **Recorded AI** | A provenance record covers the line, but the current Git blame commit does not match exactly. |
-| **Unknown** | No matching provenance evidence exists. This does **not** mean human-written. |
+| **Verified AI** | A provenance record covers the line and its Git commit or captured source-content hash matches current local evidence. |
+| **Recorded AI** | A provenance record covers the line, but the strong evidence no longer matches exactly. This is a recorded claim, not verified current provenance. |
+| **Unknown** | No matching provenance record covers the line. This does **not** mean human-written. |
 
 ## How it works
 
@@ -81,47 +113,56 @@ The CLI captures a SHA-256 hash of the exact source range, records the current G
 Rendered UI
    ↓ click
 DOM element
-   ↓ data-uiblame-source injected by the Vite transform
+   ↓ dev-only data-uiblame-source marker
 file : line : column
-   ↓ local dev-server API
-git blame + git show
+   ↓ same-origin local Vite middleware
+git blame + git show + working-tree state
    ↓
-provenance range + commit/content-hash match
+provenance range + commit/content-hash matching
    ↓
 Verified AI / Recorded AI / Unknown
 ```
 
-The plugin uses Vite's transform hook to add source markers to native JSX elements while the dev server is running. The inspector asks a local middleware endpoint for Git and provenance information. Nothing in the MVP requires an external service.
+The browser runtime never needs to upload the repository. Git and provenance inspection happen on the local development server.
 
 ## Why provenance instead of detection?
 
-Statistical “AI code detectors” cannot reliably prove who produced a line of code. UIBlame treats provenance as an evidence problem: record an agent/session when a change is created, bind it to a source range and commit, then verify that record later.
+AI detection asks, “does this code look machine-generated?”
 
-## Privacy
+UIBlame asks a different question: **“What evidence exists for where this code came from?”**
 
-Prompts may contain secrets or private context. Do not record raw prompts unless you intend to keep them. UIBlame also stores a prompt hash, so future adapters can work with redacted records. `.uiblame/private/` is ignored by default for private session material.
+That distinction is the product. Heuristics can be wrong in both directions; provenance can be inspected, explained and eventually signed.
 
-## Roadmap
+## Privacy and security
 
-- Agent adapters for Codex and Claude Code session metadata.
-- Git notes backend, signed provenance and tamper evidence.
-- Component-level history instead of single-line blame.
-- Visual time travel for an element across commits.
-- Vue/Svelte/Solid source adapters.
-- VS Code/Cursor deep links.
-- Repository-level AI contribution map based only on recorded evidence.
+Prompts and agent sessions can contain secrets. Raw prompt text is therefore opt-in in the CLI. Source paths are constrained to the project root, symbolic source paths are rejected in v0.1, Git commands use argument arrays rather than shell interpolation, and strings rendered in the inspector are HTML-escaped.
+
+The JSONL store is **not yet a cryptographic attestation**. Someone with repository write access can alter it. See [the threat model](docs/threat-model.md) and [provenance format](docs/provenance-spec.md).
 
 ## Repository layout
 
 ```text
-packages/uiblame/   Vite plugin, inspector runtime, Git/provenance engine, CLI
-apps/demo/          React + Vite demo
+packages/uiblame/   Vite plugin, browser runtime, Git/provenance engine and CLI
+apps/demo/          React + Vite dogfooding demo
+.uiblame/           local provenance records used by the demo
+docs/               architecture, provenance specification and threat model
 assets/             README artwork
 ```
 
-## Non-goals
+## Project rules
 
-UIBlame does not infer whether unrecorded code is human-written, score “AI probability,” or upload a repository for remote analysis.
+The repository includes [AGENTS.md](AGENTS.md) so coding agents preserve the core invariants, especially:
+
+- no probabilistic “AI percentage” detector;
+- `Unknown ≠ Human`;
+- local-first core behavior;
+- no silent source/prompt/session upload.
+
+See [ROADMAP.md](ROADMAP.md) for work after the v0.1 baseline.
+
+## Non-goals for v0.1
+
+UIBlame does not prove that a local provenance record itself is authentic, automatically ingest Codex/Claude sessions yet, infer human authorship, calculate “AI probability,” or provide visual time travel. Those require later versions and stronger evidence models.
 
 ## License
 
