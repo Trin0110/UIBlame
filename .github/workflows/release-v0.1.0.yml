@@ -1,0 +1,60 @@
+name: Publish v0.1.0 release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-v0.1.0.yml
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Create v0.1.0 tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: b606ccdc06028817a4fba7b87bddcbebe9c510c5
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch --tags --force
+
+          if git rev-parse -q --verify "refs/tags/v0.1.0" >/dev/null; then
+            echo "Tag v0.1.0 already exists; leaving it unchanged."
+          else
+            git tag -a v0.1.0 "$RELEASE_SHA" -m "UIBlame v0.1.0"
+            git push origin refs/tags/v0.1.0
+          fi
+
+          cat > release-notes.md <<'EOF'
+          First public release of UIBlame — evidence-based visual provenance for AI-assisted UI development.
+
+          Highlights:
+          - Click rendered UI and trace it to source file, line, and column.
+          - Inspect local Git blame, commit metadata, working-tree state, and diff.
+          - Evidence states: Verified AI, Recorded AI, and Unknown.
+          - Local-first JSONL provenance with SHA-256 source-range and prompt hashing.
+          - CLI commands: init, record, and inspect.
+          - Vite + JSX/TSX development integration with Shadow DOM inspector.
+          - Real Vite/server and Chromium regression coverage.
+          - Dev-only instrumentation with production leakage checks.
+          - Reproducible npm lockfile and CI using npm ci.
+
+          Important trust note:
+          UIBlame is not an AI-code classifier. Unknown does not mean human-written. v0.1 verifies current local evidence against a local provenance record; it does not cryptographically prove that the record itself is authentic.
+          EOF
+
+          if gh release view v0.1.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release v0.1.0 already exists."
+          else
+            gh release create v0.1.0               --repo "$GITHUB_REPOSITORY"               --verify-tag               --title "UIBlame v0.1.0"               --notes-file release-notes.md
+          fi
