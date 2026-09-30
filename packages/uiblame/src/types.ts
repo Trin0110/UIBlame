@@ -17,6 +17,7 @@ export type GitOrigin = {
 };
 
 export type ProvenanceRecord = {
+  schemaVersion: 1;
   file: string;
   start: number;
   end: number;
