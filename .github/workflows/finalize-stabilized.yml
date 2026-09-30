@@ -1,4 +1,4 @@
-name: Finalize stabilized v0.1 lockfile
+name: Generate stabilized v0.1 lockfile
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  finalize:
+  lockfile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -16,19 +16,14 @@ jobs:
         with:
           node-version: 22.12.0
           package-manager-cache: false
-      - name: Generate verified lockfile
+      - name: Generate exact verified lockfile
         run: |
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           test "$(git hash-object package-lock.json)" = "060f3bef36963d0c6f3b07d33d1d121ccd2d8cb2"
-      - name: Finalize CI and remove this one-shot workflow
-        run: |
-          sed -i 's/npm install --no-audit --no-fund/npm ci --no-audit --no-fund/' .github/workflows/ci.yml
-          test "$(git hash-object .github/workflows/ci.yml)" = "532753675d8d34fd651dfcb1b5cda044dd42ac94"
-          rm .github/workflows/finalize-stabilized.yml
-      - name: Commit lockfile
+      - name: Commit lockfile only
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add package-lock.json
           git commit -m "chore: lock stabilized v0.1 dependencies"
           git push origin HEAD:codex/v0.1-stabilized
