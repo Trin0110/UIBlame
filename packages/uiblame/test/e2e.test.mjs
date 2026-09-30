@@ -108,3 +108,24 @@ test('CLI rejects source paths outside the project root', async (t) => {
     /Source path escapes the project root/
   );
 });
+
+test('CLI normalizes paths, preserves JSONL boundaries and validates line ranges', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'uiblame-record-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(path.join(root, 'App.tsx'), '<div>first</div>\n<div>second</div>\n');
+  const args = ['record', '--root', root, '--file', './App.tsx', '--agent', 'codex'];
+  for (const range of ['1:2:3', '1.5', '0', '2:1', '1:999', '9007199254740992']) {
+    await assert.rejects(runNode([...args, '--lines', range], root));
+  }
+  await runNode([...args, '--lines', '1', '--prompt', 'intentional raw text', '--store-prompt'], root);
+  const store = path.join(root, '.uiblame/provenance.jsonl');
+  await writeFile(store, (await readFile(store, 'utf8')).trimEnd());
+  await runNode([...args, '--lines', '2'], root);
+  const records = (await readFile(store, 'utf8')).trim().split('\n').map(JSON.parse);
+  assert.equal(records.length, 2);
+  assert.equal(records[0].file, 'App.tsx');
+  assert.equal(records[0].prompt, 'intentional raw text');
+  const result = JSON.parse((await runNode(['inspect', '--root', root, '--file', 'App.tsx', '--line', '1'], root)).stdout);
+  assert.equal(result.provenance.status, 'verified-ai');
+  assert.equal(result.git.available, false);
+});

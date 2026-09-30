@@ -1,13 +1,15 @@
 import type { Plugin } from "vite";
 import path from "node:path";
 import { instrumentJsx } from "./instrument.js";
-import { CLIENT_SOURCE } from "./client.js";
+import { createClientSource } from "./client.js";
 import { inspectGit } from "./git.js";
 import { matchProvenance } from "./provenance.js";
 import type { SourceLocation } from "./types.js";
 
 export type UIBlameOptions = {
   enabled?: boolean;
+  /** Source/provenance root; defaults to the Vite root. Relative to the Vite root. */
+  root?: string;
 };
 
 function parseSource(value: string): SourceLocation {
@@ -16,7 +18,7 @@ function parseSource(value: string): SourceLocation {
   const column = Number(parts.pop());
   const line = Number(parts.pop());
   const file = parts.join("|");
-  if (!file || !Number.isInteger(line) || !Number.isInteger(column) || line < 1 || column < 1) {
+  if (!file || !Number.isSafeInteger(line) || !Number.isSafeInteger(column) || line < 1 || column < 1) {
     throw new Error("Invalid UIBlame source marker.");
   }
   return { file, line, column };
@@ -24,6 +26,7 @@ function parseSource(value: string): SourceLocation {
 
 export function uiBlame(options: UIBlameOptions = {}): Plugin {
   let root = process.cwd();
+  let base = "/";
   const enabled = options.enabled ?? true;
 
   return {
@@ -31,7 +34,8 @@ export function uiBlame(options: UIBlameOptions = {}): Plugin {
     apply: "serve",
     enforce: "pre",
     configResolved(config) {
-      root = path.resolve(config.root);
+      root = path.resolve(config.root, options.root ?? ".");
+      base = config.base;
     },
     transform(code, id) {
       if (!enabled) return null;
@@ -43,14 +47,14 @@ export function uiBlame(options: UIBlameOptions = {}): Plugin {
         {
           tag: "script",
           attrs: { type: "module", "data-uiblame-runtime": "true" },
-          children: CLIENT_SOURCE,
+          children: createClientSource(`${base}__uiblame/api/inspect`),
           injectTo: "body"
         }
       ];
     },
     configureServer(server) {
       if (!enabled) return;
-      server.middlewares.use("/__uiblame/api/inspect", async (req, res) => {
+      server.middlewares.use(`${base}__uiblame/api/inspect`, async (req, res) => {
         res.setHeader("Content-Type", "application/json; charset=utf-8");
         res.setHeader("Cache-Control", "no-store");
         try {

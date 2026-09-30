@@ -1,4 +1,4 @@
-function browserRuntime() {
+function browserRuntime(endpoint: string) {
   const w = window as Window & { __UIBLAME__?: boolean };
   if (w.__UIBLAME__) return;
   w.__UIBLAME__ = true;
@@ -51,8 +51,8 @@ function browserRuntime() {
   const outline = root.querySelector<HTMLDivElement>('.outline')!;
   const panel = root.querySelector<HTMLElement>('.panel')!;
   let inspecting = false;
-  let target: Element | null = null;
   let selectedSource = '';
+  let requestId = 0;
 
   const escapeHtml = (value: unknown) => String(value ?? '')
     .replaceAll('&','&amp;')
@@ -63,7 +63,6 @@ function browserRuntime() {
 
   const setInspecting = (value: boolean) => {
     inspecting = value;
-    target = null;
     fab.dataset.on = String(value);
     fab.textContent = value ? 'Click an element' : '◎ UIBlame';
     if (!value) outline.style.display = 'none';
@@ -79,6 +78,7 @@ function browserRuntime() {
   panel.addEventListener('click', async (event) => {
     const eventTarget = event.target as Element | null;
     if (eventTarget?.closest?.('[data-close]')) {
+      requestId++;
       panel.classList.remove('show');
       return;
     }
@@ -103,6 +103,7 @@ function browserRuntime() {
       return;
     }
     if (event.key === 'Escape') {
+      requestId++;
       setInspecting(false);
       panel.classList.remove('show');
     }
@@ -114,10 +115,8 @@ function browserRuntime() {
     const el = eventTarget instanceof Element ? eventTarget.closest('[data-uiblame-source]') : null;
     if (!el || el === host || host.contains(el)) {
       outline.style.display = 'none';
-      target = null;
       return;
     }
-    target = el;
     const rect = el.getBoundingClientRect();
     Object.assign(outline.style, {
       display:'block',
@@ -130,23 +129,28 @@ function browserRuntime() {
 
   document.addEventListener('click', async (event) => {
     if (event.composedPath().includes(host)) return;
-    if (!inspecting || !target) return;
+    if (!inspecting) return;
+    const eventTarget = event.target;
+    const clicked = eventTarget instanceof Element ? eventTarget.closest('[data-uiblame-source]') : null;
+    if (!clicked) return;
 
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
 
-    const marker = target.getAttribute('data-uiblame-source');
+    const marker = clicked.getAttribute('data-uiblame-source');
     if (!marker) return;
 
+    const currentRequest = ++requestId;
     setInspecting(false);
     panel.classList.add('show');
     selectedSource = marker.replaceAll('|', ':');
     panel.innerHTML = panelTop() + '<div class="loading">Tracing this pixel…</div>';
 
     try {
-      const res = await fetch('/__uiblame/api/inspect?source=' + encodeURIComponent(marker));
+      const res = await fetch(endpoint + '?source=' + encodeURIComponent(marker));
       const data = await res.json();
+      if (currentRequest !== requestId) return;
       if (!res.ok) throw new Error(data.error || 'Inspection failed');
 
       selectedSource = data.source.file + ':' + data.source.line + ':' + data.source.column;
@@ -172,9 +176,10 @@ function browserRuntime() {
         ${g.diff ? '<details><summary>Git diff</summary><pre>'+escapeHtml(g.diff)+'</pre></details>' : ''}
       `;
     } catch (error) {
+      if (currentRequest !== requestId) return;
       panel.innerHTML = panelTop() + '<div class="prompt">' + escapeHtml(error instanceof Error ? error.message : error) + '</div>';
     }
   }, true);
 }
 
-export const CLIENT_SOURCE = `(${browserRuntime.toString()})();`;
+export const createClientSource = (endpoint: string) => `(${browserRuntime.toString()})(${JSON.stringify(endpoint)});`;

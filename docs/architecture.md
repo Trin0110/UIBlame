@@ -24,7 +24,7 @@ Verified AI / Recorded AI / Unknown
 
 The plugin runs with `enforce: "pre"` and instruments native JSX elements before the React plugin compiles JSX. It adds a development-only `data-uiblame-source` marker containing a project-relative path and the JSX opening-element position.
 
-The transform is not applied to production builds.
+The transform is not applied to production builds. `uiBlame({ root })` can select a shared source/provenance root relative to the Vite root; the demo uses the repository root. The default remains the Vite root. The inspector endpoint respects Vite’s configured base path.
 
 ## Inspector runtime
 

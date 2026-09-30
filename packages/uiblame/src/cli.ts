@@ -30,7 +30,7 @@ function need(flags: Map<string, string | boolean>, name: string) {
 
 function parsePositiveInt(value: string, flag: string) {
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 1) {
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
     throw new Error(`--${flag} must be a positive integer`);
   }
   return parsed;
@@ -50,13 +50,14 @@ async function init(root: string) {
 }
 
 async function record(root: string, flags: Map<string, string | boolean>) {
-  const file = need(flags, "file").replaceAll("\\", "/");
+  const file = path.posix.normalize(need(flags, "file").replaceAll("\\", "/"));
   const lines = need(flags, "lines");
   const agent = need(flags, "agent");
+  if (!/^\d+(?::\d+)?$/.test(lines)) throw new Error("--lines must look like 42 or 42:58");
   const [startText, endText = startText] = lines.split(":");
   const start = Number(startText);
   const end = Number(endText);
-  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start) {
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 1 || end < start) {
     throw new Error("--lines must look like 42 or 42:58");
   }
 
@@ -88,7 +89,7 @@ async function record(root: string, flags: Map<string, string | boolean>) {
 }
 
 async function inspect(root: string, flags: Map<string, string | boolean>) {
-  const file = need(flags, "file").replaceAll("\\", "/");
+  const file = path.posix.normalize(need(flags, "file").replaceAll("\\", "/"));
   const line = parsePositiveInt(need(flags, "line"), "line");
   const column = typeof flags.get("column") === "string"
     ? parsePositiveInt(String(flags.get("column")), "column")

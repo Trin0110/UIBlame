@@ -18,6 +18,8 @@ export default defineConfig({
 });
 ```
 
+For a monorepo with a repository-level `.uiblame` store, set `uiBlame({ root: "../.." })` relative to the Vite root (as in this demo). Markers and CLI `--file` paths are relative to that root; run the CLI there or pass `--root`.
+
 Record provenance:
 
 ```bash

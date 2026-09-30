@@ -1,33 +1,34 @@
 # v0.1 release checklist
 
-Do not publish or tag v0.1.0 until all required checks are actually run.
-
-The checked items below were verified by GitHub Actions run 46 on 2026-09-30 unless stated otherwise.
+Stabilization completed on 2026-09-30. See the [verification report](stabilization-report.md)
+for exact commands, test names, browser evidence and validation limits.
 
 ## Required
 
-- [x] `npm install` succeeds from a clean checkout.
-- [ ] Lockfile is generated and committed.
-- [x] `npm run build` succeeds on Node 20 and 22.
-- [x] `npm test` passes (5/5 automated tests).
-- [x] `npm run pack:check` includes the expected `dist` files and package README.
-- [ ] Demo starts with `npm run dev` and is manually exercised in a browser.
-- [ ] Clicking the dogfooded demo hero resolves source file/line through the browser overlay.
-- [ ] Git metadata is manually confirmed in the browser inspector.
-- [x] Dogfood record resolves as `Verified AI` through the headless inspection path.
-- [x] An unrecorded line resolves as `Unknown`, not human.
-- [x] Editing a recorded range without updating evidence downgrades it to `Recorded AI`.
-- [x] Production demo build does not contain `data-uiblame-source` or the inspector runtime.
-- [ ] README's browser workflow is manually confirmed.
-- [x] SECURITY.md and threat model document the current v0.1 trust limitations.
+- [x] `npm install` succeeds; clean lockfile installs pass with `npm ci`.
+- [x] Lockfile generated and committed.
+- [x] `npm run build` succeeds on Node 20.19.0 and 22.12.0.
+- [x] `npm test` passes (10/10 tests, no skips) on both versions.
+- [x] `npm run pack:check` asserts CLI, plugin, declarations, README and LICENSE.
+- [x] Packed tarball installs outside the monorepo; plugin and CLI work.
+- [x] Demo starts with `npm run dev` and is exercised in real Chromium through Playwright.
+- [x] Clicking the demo hero resolves repository source file/line in the overlay.
+- [x] Git commit, author and diff confirmed in the browser; overlay screenshot visually reviewed.
+- [x] Dogfood range resolves as `Verified AI` through headless and browser paths.
+- [x] An unrecorded line resolves as `Unknown`, never human-written.
+- [x] Editing the recorded hero without new evidence downgrades it to `Recorded AI`.
+- [x] Malformed provenance and rejected requests do not crash the server.
+- [x] Production demo contains no UIBlame markers or inspector runtime.
+- [x] README browser workflow, keyboard controls and close behavior confirmed.
+- [x] SECURITY.md and threat model document v0.1 trust limitations.
+- [x] Stabilization changes and lockfile committed; clean checkout verified.
 
-## Before npm publish
+## Release-owner actions
 
-- [ ] Confirm the `uiblame` package name is available or choose the final package name.
-- [x] Confirm repository metadata and MIT license.
-- [ ] Create a clean release commit after the remaining checks.
-- [ ] Tag `v0.1.0` only after all required checks pass.
+- [ ] Confirm npm package name availability/ownership before publishing.
+- [ ] Tag `v0.1.0` when ready to release the verified source baseline.
+- [ ] Publish only with release-owner authorization.
 
-## Current handoff
-
-Automated CI is green. The remaining stabilization work is intentionally small: commit a reproducible lockfile and manually exercise the real browser/dev-server workflow before tagging. See `docs/codex-handoff.md`.
+v0.1 is ready to tag. No tag, remote push or npm publication was performed here.
+No v0.2 work was started. Git evidence in this uploaded workspace uses the locally
+initialized snapshot history; dogfood verification uses its unchanged range hash.
