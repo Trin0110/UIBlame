@@ -18,10 +18,12 @@ function isProvenanceRecord(value: unknown): value is ProvenanceRecord {
   return record.schemaVersion === PROVENANCE_SCHEMA_VERSION
     && typeof record.file === "string"
     && record.file.length > 0
+    && typeof record.start === "number"
     && Number.isInteger(record.start)
-    && Number(record.start) >= 1
+    && record.start >= 1
+    && typeof record.end === "number"
     && Number.isInteger(record.end)
-    && Number(record.end) >= Number(record.start)
+    && record.end >= record.start
     && typeof record.agent === "string"
     && record.agent.length > 0
     && typeof record.recordedAt === "string"
