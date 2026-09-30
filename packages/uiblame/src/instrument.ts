@@ -15,6 +15,8 @@ export function instrumentJsx(code: string, id: string, root: string) {
   const isTs = cleanId.endsWith(".tsx");
   const result = transformSync(code, {
     filename: cleanId,
+    babelrc: false,
+    configFile: false,
     sourceMaps: true,
     sourceFileName: relative,
     parserOpts: {
