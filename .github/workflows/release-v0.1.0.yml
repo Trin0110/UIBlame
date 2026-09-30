@@ -1,4 +1,5 @@
 name: Publish v0.1.0 release
+# one-shot release automation
 
 on:
   push:
