@@ -2,6 +2,7 @@
   "name": "uiblame-monorepo",
   "private": true,
   "version": "0.1.0",
+  "packageManager": "npm@10.9.2",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -9,7 +10,9 @@
   "scripts": {
     "build": "npm run build -w uiblame && npm run build -w @uiblame/demo",
     "dev": "npm run dev -w @uiblame/demo",
-    "test": "npm run test -w uiblame"
+    "test": "npm run test -w uiblame",
+    "check": "npm run build && npm test",
+    "pack:check": "npm pack --dry-run -w uiblame"
   },
   "engines": {
     "node": ">=20"
