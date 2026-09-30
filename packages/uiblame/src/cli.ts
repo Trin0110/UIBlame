@@ -68,6 +68,7 @@ async function record(root: string, flags: Map<string, string | boolean>) {
   const session = typeof flags.get("session") === "string" ? String(flags.get("session")) : undefined;
 
   await appendProvenance(root, {
+    schemaVersion: 1,
     file,
     start,
     end,
