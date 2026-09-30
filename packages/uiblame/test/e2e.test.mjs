@@ -57,6 +57,7 @@ test('CLI records and verifies provenance without storing raw prompt by default'
   const recordText = await readFile(path.join(root, '.uiblame', 'provenance.jsonl'), 'utf8');
   const record = JSON.parse(recordText.trim());
 
+  assert.equal(record.schemaVersion, 1);
   assert.equal(record.agent, 'codex');
   assert.equal(record.session, 'test-session');
   assert.equal(record.prompt, undefined);
@@ -95,7 +96,9 @@ test('CLI rejects source paths outside the project root', async (t) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'uiblame-safe-'));
   t.after(() => rm(root, { recursive: true, force: true }));
 
-  await writeFile(path.join(path.dirname(root), 'uiblame-outside.txt'), 'secret', 'utf8');
+  const outside = path.join(path.dirname(root), 'uiblame-outside.txt');
+  await writeFile(outside, 'secret', 'utf8');
+  t.after(() => rm(outside, { force: true }));
 
   await assert.rejects(
     runNode(
