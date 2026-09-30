@@ -1,0 +1,48 @@
+{
+  "name": "uiblame",
+  "version": "0.1.0",
+  "description": "Visual provenance for UI: click any pixel and trace it to source, Git history, and recorded AI sessions.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "uiblame": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/cli.ts --format esm --dts --clean",
+    "test": "node --test test/*.test.mjs"
+  },
+  "keywords": [
+    "vite",
+    "git-blame",
+    "provenance",
+    "ai",
+    "developer-tools",
+    "react",
+    "debugging"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@babel/core": "^7.28.4",
+    "@babel/types": "^7.28.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7"
+  },
+  "peerDependencies": {
+    "vite": ">=6 <8"
+  }
+}
