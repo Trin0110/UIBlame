@@ -1,0 +1,18 @@
+<svg width="1200" height="480" viewBox="0 0 1200 480" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="0%" r="100%">
+      <stop offset="0" stop-color="#39305f"/>
+      <stop offset="0.55" stop-color="#121318"/>
+      <stop offset="1" stop-color="#0a0b0e"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="480" rx="28" fill="url(#g)"/>
+  <rect x="70" y="70" width="1060" height="340" rx="20" fill="#111217" stroke="#2c2e37"/>
+  <text x="108" y="142" fill="#9d8cff" font-family="Arial, sans-serif" font-weight="700" font-size="16" letter-spacing="3">VISUAL SOFTWARE PROVENANCE</text>
+  <text x="105" y="236" fill="#f7f7fa" font-family="Arial, sans-serif" font-weight="700" font-size="72" letter-spacing="-4">UIBlame</text>
+  <text x="108" y="294" fill="#a7aab4" font-family="Arial, sans-serif" font-size="28">Click any pixel. See who—or what—made it.</text>
+  <rect x="108" y="334" width="360" height="46" rx="12" fill="#1c1b25" stroke="#4f456e"/>
+  <text x="130" y="364" fill="#d9d4ff" font-family="monospace" font-size="16">CheckoutButton.tsx:42 → Codex</text>
+  <circle cx="1045" cy="240" r="56" fill="#7c5cff" fill-opacity=".14" stroke="#7c5cff" stroke-width="3"/>
+  <path d="M1021 241h48M1045 217v48" stroke="#c7bcff" stroke-width="4" stroke-linecap="round"/>
+</svg>
