@@ -19,11 +19,17 @@ export async function resolveSafeFile(root: string, relativeFile: string) {
   const absoluteRoot = path.resolve(root);
   const absoluteFile = path.resolve(absoluteRoot, relativeFile);
   const prefix = absoluteRoot.endsWith(path.sep) ? absoluteRoot : absoluteRoot + path.sep;
-  if (absoluteFile !== absoluteRoot && !absoluteFile.startsWith(prefix)) {
+
+  if (absoluteFile === absoluteRoot || !absoluteFile.startsWith(prefix)) {
     throw new Error("Source path escapes the project root.");
   }
-  const stat = await fs.stat(absoluteFile);
+
+  const stat = await fs.lstat(absoluteFile);
+  if (stat.isSymbolicLink()) {
+    throw new Error("Symbolic source paths are not supported by UIBlame v0.1.");
+  }
   if (!stat.isFile()) throw new Error("Source path is not a file.");
+
   return absoluteFile;
 }
 
