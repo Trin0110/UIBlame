@@ -2,7 +2,7 @@
 
 Vite plugin and CLI for [UIBlame](https://github.com/Trin0110/UIBlame): evidence-based visual provenance for AI-assisted software.
 
-UIBlame traces a rendered JSX/TSX element to its source line, local Git history and explicitly recorded AI provenance.
+UIBlame traces a rendered JSX/TSX element to its source line, local Git history and explicitly recorded AI provenance. Enable inspection, then hover an element to see its Git author/source/provenance instantly; click for the full commit and diff.
 
 ```bash
 npm install -D uiblame

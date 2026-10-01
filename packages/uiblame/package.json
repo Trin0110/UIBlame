@@ -1,6 +1,6 @@
 {
   "name": "uiblame",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Evidence-based visual provenance for UI: trace rendered elements to source, Git history, and recorded AI sessions.",
   "type": "module",
   "main": "./dist/index.js",

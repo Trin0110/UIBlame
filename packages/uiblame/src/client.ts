@@ -19,6 +19,13 @@ function browserRuntime(endpoint: string) {
       .fab { position: fixed; right: 18px; bottom: 18px; border: 1px solid rgba(255,255,255,.12); background: #111216; color: #fff; height: 42px; padding: 0 14px; border-radius: 12px; font: 600 13px/1 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; box-shadow: 0 12px 38px rgba(0,0,0,.28); cursor: pointer; letter-spacing: -.01em; }
       .fab[data-on="true"] { background: #fff; color: #111216; border-color: #ddd; }
       .outline { position: fixed; display: none; pointer-events: none; border: 2px solid #7c5cff; background: rgba(124,92,255,.08); border-radius: 4px; }
+      .hovercard { position: fixed; display: none; pointer-events: none; width: min(320px, calc(100vw - 24px)); color:#f6f7fb; background:rgba(18,19,24,.97); border:1px solid rgba(255,255,255,.12); border-radius:12px; box-shadow:0 14px 42px rgba(0,0,0,.34); padding:10px 11px; font:12px/1.35 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+      .hovercard.show { display:block; }
+      .hoverTop { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px; }
+      .hoverAuthor { font-weight:750; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .hoverMeta { display:flex; align-items:center; gap:6px; min-width:0; }
+      .hoverSource { color:#b9bdc8; font:11px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .hoverSummary { color:#8e919d; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
       .panel { position: fixed; right: 18px; bottom: 70px; width: min(410px, calc(100vw - 28px)); max-height: min(680px, calc(100vh - 100px)); overflow: auto; display: none; color: #f6f7fb; background: rgba(18,19,24,.98); border: 1px solid rgba(255,255,255,.1); border-radius: 16px; box-shadow: 0 22px 70px rgba(0,0,0,.38); padding: 14px; font: 13px/1.5 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
       .panel.show { display: block; }
       .top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
@@ -43,16 +50,21 @@ function browserRuntime(endpoint: string) {
       .loading { color:#a8abb6; padding:6px 0; }
     </style>
     <div class="outline"></div>
+    <section class="hovercard" aria-live="polite"></section>
     <section class="panel" aria-live="polite"></section>
     <button class="fab" type="button" title="Toggle UIBlame (Alt+Shift+B)">◎ UIBlame</button>
   `;
 
   const fab = root.querySelector<HTMLButtonElement>('.fab')!;
   const outline = root.querySelector<HTMLDivElement>('.outline')!;
+  const hovercard = root.querySelector<HTMLElement>('.hovercard')!;
   const panel = root.querySelector<HTMLElement>('.panel')!;
   let inspecting = false;
   let selectedSource = '';
   let requestId = 0;
+  let hoverRequestId = 0;
+  let hoverMarker = '';
+  let hoverTimer: number | undefined;
 
   const escapeHtml = (value: unknown) => String(value ?? '')
     .replaceAll('&','&amp;')
@@ -61,11 +73,64 @@ function browserRuntime(endpoint: string) {
     .replaceAll('"','&quot;')
     .replaceAll("'",'&#039;');
 
+  const hideHover = () => {
+    hoverRequestId++;
+    hoverMarker = '';
+    if (hoverTimer !== undefined) {
+      window.clearTimeout(hoverTimer);
+      hoverTimer = undefined;
+    }
+    hovercard.classList.remove('show');
+  };
+
   const setInspecting = (value: boolean) => {
     inspecting = value;
     fab.dataset.on = String(value);
-    fab.textContent = value ? 'Click an element' : '◎ UIBlame';
-    if (!value) outline.style.display = 'none';
+    fab.textContent = value ? 'Hover to inspect' : '◎ UIBlame';
+    if (!value) {
+      outline.style.display = 'none';
+      hideHover();
+    }
+  };
+
+  const positionHover = (rect: DOMRect) => {
+    const gap = 10;
+    const width = Math.min(320, Math.max(220, window.innerWidth - 24));
+    let left = Math.min(rect.left, window.innerWidth - width - 12);
+    left = Math.max(12, left);
+    const estimatedHeight = 88;
+    let top = rect.bottom + gap;
+    if (top + estimatedHeight > window.innerHeight - 12) top = Math.max(12, rect.top - estimatedHeight - gap);
+    Object.assign(hovercard.style, { left: left + 'px', top: top + 'px' });
+  };
+
+  const hoverStatus = (status: string) =>
+    status === 'verified-ai' ? ['Verified AI', 'verified']
+    : status === 'recorded-ai' ? ['Recorded AI', 'recorded']
+    : ['AI Unknown', 'unknown'];
+
+  const renderHoverLoading = (marker: string) => {
+    const source = marker.replaceAll('|', ':');
+    hovercard.innerHTML =
+      '<div class="hoverTop"><div class="hoverAuthor">Tracing Git author…</div></div>' +
+      '<div class="hoverSource">' + escapeHtml(source) + '</div>';
+    hovercard.classList.add('show');
+  };
+
+  const renderHoverData = (data: any) => {
+    const p = data.provenance;
+    const g = data.git;
+    const [statusText, statusClass] = hoverStatus(p.status);
+    const author = g.author || (g.available === false ? 'Git unavailable' : 'Uncommitted / unknown');
+    const source = data.source.file + ':' + data.source.line + ':' + data.source.column;
+    const agent = p.record?.agent ? escapeHtml(p.record.agent) + ' · ' : '';
+    const summary = g.summary || g.error || '';
+    hovercard.innerHTML =
+      '<div class="hoverTop"><div class="hoverAuthor">' + escapeHtml(author) + '</div>' +
+      '<div class="hoverMeta"><span class="pill ' + statusClass + '">' + agent + statusText + '</span></div></div>' +
+      '<div class="hoverSource">' + escapeHtml(source) + '</div>' +
+      (summary ? '<div class="hoverSummary">' + escapeHtml(summary) + '</div>' : '');
+    hovercard.classList.add('show');
   };
 
   const panelTop = () =>
@@ -115,8 +180,10 @@ function browserRuntime(endpoint: string) {
     const el = eventTarget instanceof Element ? eventTarget.closest('[data-uiblame-source]') : null;
     if (!el || el === host || host.contains(el)) {
       outline.style.display = 'none';
+      hideHover();
       return;
     }
+
     const rect = el.getBoundingClientRect();
     Object.assign(outline.style, {
       display:'block',
@@ -125,6 +192,37 @@ function browserRuntime(endpoint: string) {
       width:rect.width+'px',
       height:rect.height+'px'
     });
+
+    const marker = el.getAttribute('data-uiblame-source');
+    if (!marker) {
+      hideHover();
+      return;
+    }
+
+    positionHover(rect);
+    if (marker === hoverMarker) return;
+
+    hoverMarker = marker;
+    const currentHoverRequest = ++hoverRequestId;
+    if (hoverTimer !== undefined) window.clearTimeout(hoverTimer);
+    renderHoverLoading(marker);
+
+    hoverTimer = window.setTimeout(async () => {
+      hoverTimer = undefined;
+      try {
+        const res = await fetch(endpoint + '?source=' + encodeURIComponent(marker));
+        const data = await res.json();
+        if (!inspecting || marker !== hoverMarker || currentHoverRequest !== hoverRequestId) return;
+        if (!res.ok) throw new Error(data.error || 'Inspection failed');
+        renderHoverData(data);
+      } catch (error) {
+        if (!inspecting || marker !== hoverMarker || currentHoverRequest !== hoverRequestId) return;
+        hovercard.innerHTML =
+          '<div class="hoverAuthor">Unable to inspect</div>' +
+          '<div class="hoverSource">' + escapeHtml(error instanceof Error ? error.message : error) + '</div>';
+        hovercard.classList.add('show');
+      }
+    }, 120);
   }, true);
 
   document.addEventListener('click', async (event) => {
@@ -142,6 +240,7 @@ function browserRuntime(endpoint: string) {
     if (!marker) return;
 
     const currentRequest = ++requestId;
+    hideHover();
     setInspecting(false);
     panel.classList.add('show');
     selectedSource = marker.replaceAll('|', ':');
