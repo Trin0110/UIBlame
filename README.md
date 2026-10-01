@@ -38,7 +38,7 @@ npm test
 npm run dev
 ```
 
-Open the Vite URL and click **◎ UIBlame** in the bottom-right, then click an instrumented element. You can also toggle inspection with **Alt+Shift+B**; **Escape** cancels inspection or closes the panel.
+Open the Vite URL and click **◎ UIBlame** in the bottom-right. While inspection mode is active, **hover any instrumented element** to immediately see its Git author, source file/line and AI provenance status. Click the element to open the full commit/diff/session panel. You can also toggle inspection with **Alt+Shift+B**; **Escape** cancels inspection or closes the panel.
 
 ## Add it to a Vite project
 
@@ -113,7 +113,7 @@ It prints JSON containing the source location, Git evidence and provenance resul
 
 ```text
 Rendered UI
-   ↓ click
+   ↓ hover for author/source/provenance · click for full details
 DOM element
    ↓ dev-only data-uiblame-source marker
 file : line : column
