@@ -12,6 +12,7 @@ const browser = await chromium.launch({ executablePath: process.env.UIBLAME_CHRO
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
+const hovercard = page.locator('#uiblame-root .hovercard');
 const panel = page.locator('#uiblame-root .panel');
 const pill = panel.locator('.pill');
 async function inspect(selector, status, keyboard = false) {
@@ -23,6 +24,19 @@ async function inspect(selector, status, keyboard = false) {
 }
 try {
   await page.goto(url);
+
+  // Hover-first: once inspection mode is enabled, hovering alone exposes Git author,
+  // source location and AI provenance without opening the full panel.
+  await page.getByRole('button', { name: '◎ UIBlame' }).click();
+  await page.locator('h1').hover();
+  await hovercard.getByText(/Verified AI/).waitFor();
+  assert.match(await hovercard.innerText(), /apps\/demo\/src\/main\.tsx:19:9/);
+  const hoverAuthor = await hovercard.locator('.hoverAuthor').innerText();
+  assert.ok(hoverAuthor.trim().length > 0);
+  assert.doesNotMatch(hoverAuthor, /unavailable|unknown/i);
+  await page.keyboard.press('Escape');
+  assert.equal(await hovercard.isVisible(), false);
+
   await inspect('h1', 'Verified AI');
   assert.equal(await page.locator('h1').getAttribute('data-uiblame-source'), 'apps/demo/src/main.tsx|19|9');
   assert.match(await panel.innerText(), /bootstrap-v0.1/);
@@ -74,7 +88,7 @@ try {
   await page.reload();
   await inspect('h1', 'Verified AI');
   assert.deepEqual(errors, []);
-  console.log('Chromium passed: source marker → endpoint → Git metadata/diff → Verified AI; Unknown; Recorded AI; malformed-store recovery; keyboard, click-only, close and stale-response handling.');
+  console.log('Chromium passed: hover-first Git author/source/provenance preview; source marker → endpoint → Git metadata/diff → Verified AI; Unknown; Recorded AI; malformed-store recovery; keyboard, click-only, close and stale-response handling.');
 } finally {
   await writeFile(sourceFile, originalSource);
   await writeFile(storeFile, originalStore);
