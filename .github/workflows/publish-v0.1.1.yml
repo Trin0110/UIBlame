@@ -1,0 +1,62 @@
+name: Publish v0.1.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-v0.1.1.yml
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: v0.1.1
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Install and verify
+        run: |
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run pack:check
+
+      - name: Publish uiblame@0.1.1 if needed
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if npm view "uiblame@0.1.1" version >/dev/null 2>&1; then
+            echo "uiblame@0.1.1 already exists; skipping npm publish."
+          else
+            npm publish -w uiblame --access public --provenance
+          fi
+
+      - name: Create GitHub release if needed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v0.1.1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release v0.1.1 already exists."
+          else
+            cat > release-notes.md <<'EOF'
+          UIBlame v0.1.1 makes the inspector hover-first.
+
+          - Enable UIBlame once, then hover any instrumented element to see its Git author, source file/line, and AI provenance status immediately.
+          - Click remains the full-detail action for commit metadata, diff, session, and provenance reasoning.
+          - Hover inspection is debounced and ignores stale responses while moving quickly between elements.
+          - Chromium browser regression coverage now verifies the hover-first flow automatically.
+
+          Git authorship is automatic from git blame. AI provenance still requires recorded evidence; Unknown never means human-written.
+          EOF
+            gh release create v0.1.1               --repo "$GITHUB_REPOSITORY"               --verify-tag               --title "UIBlame v0.1.1"               --notes-file release-notes.md
+          fi
