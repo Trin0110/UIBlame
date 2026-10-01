@@ -1,39 +1,10 @@
-name: Publish npm v0.1.0
+name: npm v0.1.0 publication record
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - .github/npm-publish-v0.1.0-trigger
-
-permissions:
-  contents: read
-  id-token: write
 
 jobs:
-  publish:
+  info:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: v0.1.0
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
-          package-manager-cache: false
-
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
-
-      - name: Verify package
-        run: |
-          npm run check
-          npm run pack:check
-
-      - name: Publish uiblame@0.1.0
-        run: npm publish -w uiblame --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: echo "uiblame@0.1.0 was published successfully to npm on 2026-10-01. Do not republish this version."
