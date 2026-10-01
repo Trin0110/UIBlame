@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.1.0 — unreleased
+## 0.1.1 — unreleased
+
+- Add a hover-first inspector card that shows Git author, source location and AI provenance without requiring a click.
+- Keep click as the full-detail action for commit metadata, diff, session and provenance reasoning.
+- Debounce hover inspection and ignore stale hover responses while moving between elements.
+
+## 0.1.0 — 2026-10-01
 
 - Initial Vite/JSX/TSX development plugin.
 - Click-to-source browser overlay isolated with Shadow DOM.
