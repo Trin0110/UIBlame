@@ -26,9 +26,7 @@ jobs:
       - name: Verify tag matches package version
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          node -e "const p=require('./packages/uiblame/package.json'); if (p.version !== process.env.VERSION) throw new Error('Tag/package version mismatch: '+process.env.VERSION+' vs '+p.version)" 
-        env:
-          VERSION: ${{ github.ref_name }}
+          node -e "const p=require('./packages/uiblame/package.json'); const v=process.argv[1]; if (p.version !== v) throw new Error('Tag/package version mismatch: '+v+' vs '+p.version)" "$VERSION"
 
       - name: Install and verify
         run: |
