@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.1 — unreleased
+## 0.1.1 — 2026-10-01
 
 - Add a hover-first inspector card that shows Git author, source location and AI provenance without requiring a click.
 - Keep click as the full-detail action for commit metadata, diff, session and provenance reasoning.
